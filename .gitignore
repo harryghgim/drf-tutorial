@@ -1,0 +1,9 @@
+.env/
+__pycache__/
+**/migrations/*
+!**/migrations/__init__.py
+.env*
+settings/local.py
+settings/prod.py
+.vscode/
+db.sqlite3
