@@ -1,4 +1,7 @@
-from rest_framework import generics, permissions
+from rest_framework import permissions, renderers, viewsets
+from rest_framework.decorators import api_view, action
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from django.contrib.auth import get_user_model
 
 from snippets.models import Snippet
@@ -8,38 +11,29 @@ from snippets.serializers import SnippetSerializer, UserSerializer
 
 USER = get_user_model()
 
-class SnippetList(generics.ListCreateAPIView):
-    """List all code snippets, or create a new snippet.
-    """
-    queryset = Snippet.objects.all()
-    serializer_class = SnippetSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    def perform_create(self, serializer):
-        """Pass in request.user to owner field in Snippet instance
-        when saving an instance.
-        """
-        serializer.save(owner=self.request.user)
+class SnippetViewSet(viewsets.ModelViewSet):
+    """This viewset automatically provides 'list', 'create', 'retrieve',
+    'update' and 'destroy' actions.
 
-
-class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete a snippet instance
+    Additionally we also provide an extra 'highlight' action.
     """
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly,
                           IsOwnerOrReadOnly]
 
+    @action(detail=True, renderer_classes=[renderers.StaticHTMLRenderer])
+    def highlight(self, request, *args, **kwargs):
+        snippet = self.get_object()
+        return Response(snippet.highlighted)
 
-class UserList(generics.ListAPIView):
-    """List all users.
-    """
-    queryset = USER.objects.all()
-    serializer_class = UserSerializer
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 
-class UserDetail(generics.RetrieveAPIView):
-    """Get detail for a user
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """This viewset automatically provides 'list' and 'retrieve' actions'.
     """
     queryset = USER.objects.all()
     serializer_class = UserSerializer
